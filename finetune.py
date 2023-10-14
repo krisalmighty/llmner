@@ -24,11 +24,11 @@ import bitsandbytes as bnb
 from peft import (
     LoraConfig,
     get_peft_model,
-    get_peft_mdoel_state_dict,
+    get_peft_model_state_dict,
     prepare_model_for_int8_training,
     set_peft_model_state_dict,
 )
-
+# LlamaForCausalLM--> llama model LlamaTokenizer: tokenizer
 from transformer import LlamaForCausalLM, LlamaTokenizer
 
 from transformer import Trainer
@@ -37,8 +37,19 @@ from transformer import DataCollatorForSeq2Seq
 
 from datasets import Dataset
 
-from utils.prompter import Prompt
+# generate prompt
+from utils.prompter import Prompter
 
-import pandas as pd
+origin = [12148, 6597, 278, 7855, 310]
+origin = [str(item) for item in prefix]
 
-import numpy as np
+prefix = [3532, 29966]
+prefix = [str(item) for item in origin]
+
+suffix = [8653]
+suffix = [str(item) for item in suffix]
+
+input = [29937, 10567, 29901]
+input = [str(item) for item in input]
+
+
