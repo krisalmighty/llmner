@@ -37,5 +37,8 @@ from transformer import DataCollatorForSeq2Seq
 
 from datasets import Dataset
 
-from utils.prompter import Prompter
+from utils.prompter import Prompt
 
+import pandas as pd
+
+import numpy as np
