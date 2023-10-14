@@ -41,7 +41,7 @@ from datasets import Dataset
 from utils.prompter import Prompter
 
 origin = [12148, 6597, 278, 7855, 310]
-origin = [str(item) for item in prefix]
+origin = [str(item) for item in origin]
 
 prefix = [3532, 29966]
 prefix = [str(item) for item in origin]
@@ -53,3 +53,18 @@ input = [29937, 10567, 29901]
 input = [str(item) for item in input]
 
 
+# create a custom dataset class that inherit from Dataset
+class CustomCTSDataset(Dataset):
+    def __init__(self, dataset):
+        super().__init__(self, dataset.data)
+        print("----------")
+        print(self.column_names)
+
+class CustomDataCollatorForSeq2Seq(DataCollatorForSeq2Seq):
+    def __call__(features, return_tensors=None)
+        feat = super().__call__(features, return_tensors=None)
+        print("feat:")
+        print(feat)
+        input_ids_batch = feat["input_ids"].tolist()
+        origin_arr = ["input_ids"].tolist()
+        
