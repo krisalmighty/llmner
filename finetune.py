@@ -59,7 +59,22 @@ def longest_common_sublist(A, B):
     end_A = -1
     start_B = -1
     end_B = -1
-    
+    for i in range(len(A)):
+        for j in range(len(B)):
+            if A[i] == B[j]:
+                if i == 0 or j == 0:
+                    matrix[i][j] = 1
+                else:
+                    matrix[i][j] = matrix[i-1][j-1] + 1
+                if matrix[i][j] >= max_len:
+                    max_len = matrix[i][j]
+                    start_A = i - max_len + 1
+                    end_A = i
+                    start_B = j - max_len + 1
+                    end_B = j
+                else:
+                    matrix[i][j] = 0
+    return [start_A, end_A, start_B, end_B]
 
 
 
@@ -100,6 +115,45 @@ class CustomDataCollatorForSeq2Seq(DataCollatorForSeq2Seq):
             input_index = input_str[0: input_start + len(sentence_str)].count("_") + 1
 
             entity_ids = input_ids[prefix_index: suffix_index + 1]
-            overlaps_ids = longest_common_sublist(input_ids[input_index: prefix_index], entity_ids)
+            overlap_ids = longest_common_sublist(input_ids[input_index: prefix_index], entity_ids)
 
+            pos_start = input_index + overlap_ids[0] - overlap_ids[2]
+            pos_end = input_index + overlap_ids[0] - overlap_ids[2] + len(entity_ids)
+            pos_arr.append([pos_start, pos_end - 1])
+            neg_arr.append([pos_start - 1, pos_start - 2, pos_end, pos_end + 1])
+
+        feat["origin"] = torch.tensor(origin_arr)
+        feat["pos"] = torch.tensor(pos_arr)
+        feat["neg"] = torch.tensor(neg_arr)
+
+        return feat
+class ContrastiveTrainer(Trainer):
+    def contrastive_loss(self, hidden_states, origin, pos, neg):
+        # hidden_states:  B * L * D (batch_size * context_length_of_each_sample(with padding) * token_embedding_length)
+        # origin:  B
+        # pos : B * P
+        # neg : B * N
+        # origin_e: B * 1 * D      pos_e:  B * P * D  neg_e: B * N * D
+        # P = 2  N = 4
+        # embedding comes from transformer
+        # origin_e: the embedding for entity in the instruction with number equals to batch
+        # pos_e: the embedding for target entities in input
+        # neg_e: the embedding for negative tokens in input
+        origin_e = torch,gather(hidden_states, 1, origin.unsqueenze(-1))
+        pass
+
+
+    def compute_loss(self, model, inputs, return_outputs=False):
+        origin = copy.deepcopy(inputs["origin"])
+        pos = copy.deepcopy(inputs["pos"])
+        neg = copy.deepcopy(inputs["neg"])
+
+        if "origin" in  inputs:
+            inputs.pop("origin")
+        if "pos" in inputs:
+            inputs.pop("pos")
+        if "neg" in inputs:
+            inputs.pop("neg")
+        if self.label_smoother is not None and "labels" in inputs:
+            labels = inputs.pop("labels")
 
