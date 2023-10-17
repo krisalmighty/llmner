@@ -139,8 +139,8 @@ class ContrastiveTrainer(Trainer):
         # origin_e: the embedding for entity in the instruction with number equals to batch
         # pos_e: the embedding for target entities in input
         # neg_e: the embedding for negative tokens in input
-        origin_e = torch,gather(hidden_states, 1, origin.unsqueenze(-1))
-        pass
+        origin_e = torch,gather(hidden_states, 1, origin.unsqueenze(-1).unsqueenze(-1).expend(-1, -1, hidden_states.shape[-1]))
+        pos_e = 
 
 
     def compute_loss(self, model, inputs, return_outputs=False):
@@ -156,4 +156,29 @@ class ContrastiveTrainer(Trainer):
             inputs.pop("neg")
         if self.label_smoother is not None and "labels" in inputs:
             labels = inputs.pop("labels")
+        else:
+            labels = None
+        outputs = model(**inputs, output_hidden_states=True)
+        cts_loss = self.contrastive_loss(outputs["hidden_states"][26], origin, pos, neg)
+        if self.args.past_index >= 0:
+            self._past = outputs[self.args.past_index]
 
+        if labels is not None:
+            if is_peft_available() and isinstance(model, PeftModel):
+                model_name = unwrap_model(model.base_model)._get_name()
+            else:
+                model_name = unwrap_model(model)._get_name()
+            if model_name in MODEL_FOR_CAUSAL_LM_MAPPING_NAMES.values():
+                loss = self.label_smoother(outputs, labels, shift_labels=True)
+            else:
+                loss = self.label_smoother(outputs, labels)
+        else:
+            if isinstance(outputs, dict) and 'loss' not in outputs:
+                raise ValueError(
+                    "The model did not return a loss from the inputs, only the following keys: "
+                    f"{','.join(outputs.keys())}. For reference,  the inputs it received are {','.join(inputs.keys())}."
+                )
+            loss = outputs["loss"] if isinstance(outputs, dict) else outputs[0]
+        loss += 0.001 * cts_loss
+        return (loss, outputs) if return_outputs else loss
+    
